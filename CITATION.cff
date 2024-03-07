@@ -1,0 +1,7 @@
+@software{octopus3Dtracking,
+  author = {Joost Daniels},
+  title = {Octopus {3D} tracking},
+  url = {https://github.com/bioinspirlab/octopus-3d-tracking},
+  version = {1.0.0},
+  year = {2024}
+}
