@@ -1,0 +1,624 @@
+%% Various analysis and plots for octopus data
+
+clear all
+close all
+
+%% Inputs
+
+% clip = "O10_6946_L1";   % Verified. Note: use adjusted reference, option (4) below
+
+% clip = "O10_7875_R1";  % Verified. Clip too short for stretch reference
+
+% clip = "O14_24216_L1";  % Verified
+% xlimits = [-30 50];
+% strainlimits = [-20 70];
+
+% clip = "O14_24216_L2";  % Verified
+% xlimits = [-30 10];
+% strainlimits = [-20 80];
+% locshow = 6491+([-6,-3,0,1,2,3,4,5,6])*60;
+
+% clip = "O14_24216_L3";  % Verified
+% xlimits = [-20 3];
+% strainlimits = [-30 100];
+
+% clip = "O15_1611_7882_R3";  % Verified
+% xlimits = [-26 5];
+% strainlimits = [-30 100];
+
+% clip = "O15_1611_11589_R3";     % Verified
+% strainlimits = [-30 100];
+
+% clip = "O15_1611_13209_L3_1";   % Verified. Note no good strain reference is present
+% xlimits = [-2 5];
+
+% clip = "O15_1611_13209_L3_2";   % Verified
+% xlimits = [-18 -5];
+% strainlimits = [-30 80];
+
+% clip = "O15_1611_13209_L4";     % Verified. Needs different strain reference
+% xlimits = [-6.2 5.2];
+% strainlimits = [-20 80];
+% locshow = 997+([-5,-2,-1,0,1,2,3,4])*60;
+
+% clip = "O15_1611_15512_L1";     % Verified
+% xlimits = [-11 5];
+% strainlimits = [-30 80];
+% locshow = 680+(-4:1:4)*60;
+
+% clip = "O15_1611_19083_L2";     % Verified
+% xlimits = [-16 35];
+% strainlimits = [-30 110];
+
+clip = "O15_1611_19083_L3";     % Verified
+strainlimits = [-20 110];
+locshow = 2935-4+(-23:3:5)*60;
+
+% clip = "O15_1611_22417_L2";     % Verified
+% xlimits = [-15 15];
+% strainlimits = [-30 80];
+
+% clip = "O15_1611_22417_L3";     % Verified
+% xlimits = [-30 4];
+% strainlimits = [-30 110];
+
+% clip = "O15_1611_22417_L4";     % Verified. Note: need strain reference
+%     at 9 seconds
+% xlimits = [-10 5];
+% strainlimits = [-30 80];
+
+mode = "absolute";    % Options: "absolute" or "normalized"
+bininterval = 0.2;      % Number of seconds for bininterval. Set 0 for OFF
+plotpeak = false;        % Whether to plot peak on curvature plot
+showpoints = false;      % Whether to show red lines for where the points are, and their labels
+timeaxis = "s";     % How to set the time axis: "frame" or "s" or ???
+armtouchpoint_mm = 0;   % This should be replaced if available
+
+%% Data load
+
+matpath = octo_InitializeData(clip);
+load(matpath,'armlift','framerate','armtrimloc','curvframestart',...
+    'curvframeend','armtouchpoint_mm');
+preprocessdata = octo_PreProcess(clip);
+load(preprocessdata,'ptorder','guidepts','numframes','ptdatmm',...
+    'guideptind','arr','numpsplineseg','ptorderNG','ptnames')
+
+% This is where the actual analysis is performed
+analysisdatapath = octo_AnalyzeSegments(clip);
+load(analysisdatapath,'cumdist','curvdat','curvdatbinned','timax',...
+    'segdists','segdistbig','curvPeakInd','ptdistarr','splpts');
+% segdistbig = 100*segdistbig./min(segdistbig,[],1,'omitnan')-100;
+
+% Make binned time axis
+% Constrain time axis
+curvframeend = min(curvframeend,numel(timax));
+switch timeaxis
+    case "frame"
+        timax_mod = curvframestart:curvframeend;    % Use this line for frame numbers
+        timax = 1:numel(timax);
+        bininterval = 0;    % Binning off in this case
+    case "s"
+        timax_mod = timax(curvframestart:curvframeend);
+end
+timax_orig = timax;
+segdistbig_orig = segdistbig;
+if bininterval > 0
+    timax_binned = (floor(min(timax)/bininterval)*bininterval):...
+        bininterval:(ceil(max(timax)/bininterval)*bininterval);
+    % Calculate in new grid to collect all data
+    strainmat = nan(size(segdistbig,2),numel(timax_binned));
+    curvmat = nan(numel(timax_binned),size(curvdatbinned,2));
+    for ll = 1:size(segdistbig,2)
+        % Relate input positions to sample areas
+        for tt = 1:numel(timax_binned)
+            tind = find(and(timax>timax_binned(tt),timax<=timax_binned(min(end,tt+1))));
+            temparr = segdistbig(tind,ll);
+            strainmat(ll,tt) = median(temparr(:),'omitnan');
+        end
+    end
+    for ll = 1:size(curvdatbinned,2)
+        % Relate input positions to sample areas
+        for tt = 1:numel(timax_binned)
+            tind = find(and(timax>timax_binned(tt),timax<=timax_binned(min(end,tt+1))));
+            temparr = curvdatbinned(tind,ll);
+            curvmat(tt,ll) = median(temparr(:),'omitnan');
+        end
+    end
+    segdistbig = strainmat';
+    timax = timax_binned;
+    ptdistarr = ptdistarr(1:numel(timax_binned),:);
+    curvdatbinned = curvmat;
+else
+end
+
+% Array for drawing point locations if desired
+[yyy,~] = meshgrid(timax,1:numel(ptorderNG));
+
+%% Plot curvature surface
+
+fsplcurv = figure(8);
+fsplcurv.Position = [100 100 440 480];
+
+ptnames2 = ptnames(~guideptind);
+
+% Set limits for labeling convenience
+if exist("xlimits","var")
+    xl1 = xlimits(1);
+    xl2 = xlimits(2);
+else
+    xl1 = timax_mod(1);
+    xl2 = timax_mod(end);
+end
+
+switch mode
+    case "normalized"
+        % Normalized
+        imm = imagesc(timax,cumdist(1:end-1)/max(cumdist),curvdatbinned');  % Normalized
+        ylabel('Relative position along arm')
+        c = colorbar;
+        c.Label.String = '(Bend radius)^{-1} (mm^{-1})';
+        clim([-0.2 25])
+        ylim([0 1]);
+        hold on
+        if showpoints
+            plot(yyy',ptdistarr/max(cumdist),'-r'); % Normalized
+            % Add line labels
+            for i=1:numel(ptorderNG)
+                text(xl2-0.01*(xl2-xl1),...
+                    ptdistarr(end,i)/max(cumdist),ptnames2(i),...
+                    'Horizontalalignment','right','VerticalAlignment','bottom',...
+                    'Color','red')  % Normalized
+            end
+        end
+        if plotpeak
+            % Plot curvature peak (normalized)
+            plot(timax_orig(~isnan(curvPeakInd)),interp1(1:numel(cumdist),...
+                cumdist,curvPeakInd(~isnan(curvPeakInd)))/max(cumdist),'.r');
+        end
+
+    case "absolute"
+        % armtouchpoint_mm = 0;
+        % Not normalized
+        imm = imagesc(timax,cumdist(1:end-1)-armtouchpoint_mm,curvdatbinned');
+        ylabel('Average position along arm (mm)')
+        c = colorbar;
+        c.Label.String = '(Bend radius)^{-1} (mm^{-1})';
+        clim([-0.2 25])
+        hold on
+        if showpoints
+            plot(yyy',ptdistarr-armtouchpoint_mm,'-r');
+            % Add line labels
+            for i=1:numel(ptorderNG)
+                text(xl2-0.01*(xl2-xl1),...
+                    ptdistarr(end,i)-armtouchpoint_mm,ptnames2(i),...
+                    'Horizontalalignment','right','VerticalAlignment','bottom',...
+                    'Color','red')  % Not normalized
+            end
+        end
+        if plotpeak
+            % Plot curvature peak (not normalized)
+            plot(timax_orig(~isnan(curvPeakInd)),interp1(1:numel(cumdist),...
+                cumdist,curvPeakInd(~isnan(curvPeakInd)))-armtouchpoint_mm,'.r');
+        end
+end
+switch timeaxis
+    case "frame"
+        xlabel('Frame number')
+    case "s"
+        xlabel('Time from substrate release (s)');
+end
+
+hold off
+xlim([timax_mod(1) timax_mod(end)])
+if exist("xlimits","var")
+    xlim(xlimits);
+end
+% title(clip,'Interpreter','none')
+colormap parula
+cc=colormap;
+cc(1,:) = [0.9 0.9 0.9];
+colormap(cc)
+curvax = gca;
+curvax.FontSize = 20;
+curvax.YDir = "normal";
+curvax.Position(3)=curvax.Position(3)*0.95;
+
+%% Plot shift in curvature peak over time
+
+curvshiftfig = figure(11);
+curvshiftfig.Position = [550 100 440 480];
+plot(timax_orig(~isnan(curvPeakInd)),interp1(1:numel(cumdist),...
+    cumdist,curvPeakInd(~isnan(curvPeakInd)))-armtouchpoint_mm,'.r');
+ylim([-80 20])
+xlabel('Time from substrate release (s)')
+ylabel('Average position along arm (mm)')
+title(clip,'Interpreter','none')
+optimizeFig;
+
+%% Show stretching with similar graph as curvature surface above
+
+fstretch2D = figure(9);
+fstretch2D.Position = [100 680 440 480];
+
+% NOTE: SELECT YOUR FAVORITE REFERENCE HERE!
+% (1) Use minimum as reference
+% segdistbig = 100*segdistbig./min(segdistbig,[],1,'omitnan')-100;
+% cbarstring = "Strain (% from minimum)";
+
+% (2) Use time 0 for strain reference
+% tind0 = armlift;
+% % If not all segments are populated, throw warning.
+% temp = ~isnan(sum(segdists,2));
+% if temp(tind0) == 0
+%     warning('Not all segments populated');
+% end
+% segdistbig = 100*segdistbig./segdistbig(tind0,:);
+% cbarstring = "Strain (% from t=0)";
+
+% % (3) Use average in window -20 to -9 for strain reference
+% tref = (timax>-20) & (timax<=-9);
+% segdistbig_orig = 100*segdistbig_orig./median(segdistbig(tref,:),1,'omitnan')-100;
+% segdistbig = 100*segdistbig./median(segdistbig(tref,:),1,'omitnan')-100;
+% cbarstring = "Strain (% from median at -20<t<=-9)";
+
+% (3b) Use average in window -10 to -5 for strain reference
+tref = (timax>-10) & (timax<=-5);
+segdistbig_orig = 100*segdistbig_orig./median(segdistbig(tref,:),1,'omitnan')-100;
+segdistbig = 100*segdistbig./median(segdistbig(tref,:),1,'omitnan')-100;
+cbarstring = "Strain (% from median at -10<t<=-5)";
+
+% % (4) Use average in window 0 to 2 for strain reference
+% tref = (timax>0) & (timax<=2);
+% segdistbig_orig = 100*segdistbig_orig./median(segdistbig(tref,:),1,'omitnan')-100;
+% segdistbig = 100*segdistbig./median(segdistbig(tref,:),1,'omitnan')-100;
+% cbarstring = "Strain (% from median at 0<t<2)";
+
+switch mode
+    case "normalized"
+        imm = imagesc(timax,ptdistarr(1,:)/max(cumdist),segdistbig');     % Normalized
+
+        ylabel('Relative position along arm')
+        c = colorbar;
+
+        hold on
+        if showpoints
+            plot(yyy',ptdistarr/max(cumdist),'-r'); % Normalized
+            % Add line labels
+            for i=1:numel(ptorderNG)
+                text(xl2-0.01*(xl2-xl1),...
+                    ptdistarr(end,i)/max(cumdist),ptnames2(i),...
+                    'Horizontalalignment','right','VerticalAlignment','bottom',...
+                    'Color','red')  % Normalized
+            end
+        end
+    case "absolute"
+        imm = imagesc(timax,cumdist(1:end-1)-armtouchpoint_mm,segdistbig');     % Not normalized
+        ylabel('Average position along arm (mm)')
+        c = colorbar;
+
+        hold on
+        if showpoints
+            plot(yyy',ptdistarr-armtouchpoint_mm,'-r');
+            % Add line labels
+            for i=1:numel(ptorderNG)
+                text(xl2-0.01*(xl2-xl1),...
+                    ptdistarr(end,i)-armtouchpoint_mm,ptnames2(i),...
+                    'Horizontalalignment','right','VerticalAlignment','bottom',...
+                    'Color','red')  % Not normalized
+            end
+        end
+end
+switch timeaxis
+    case "frame"
+        xlabel('Frame number')
+    case "s"
+        xlabel('Time from substrate release (s)');
+end
+
+colormap(cc);
+c.Label.String = cbarstring;
+if exist("strainlimits","var")
+    clim(strainlimits);
+else
+    strainlimits = clim;
+end
+hold off
+xlim([timax_mod(1) timax_mod(end)])
+if exist("xlimits","var")
+    xlim(xlimits);
+end
+
+% Fix limits so that only NaN is displayed dark
+cl1 = c.Limits;
+c.Limits = cl1;
+imm.CData(imm.CData<=(cl1(1))) = cl1(1)+diff(cl1)/size(cc,1);
+imm.CData(isnan(imm.CData)) = cl1(1);
+
+% title(clip,'Interpreter','none')
+stretchax = gca;
+stretchax.FontSize = 20;
+stretchax.YDir = "normal";
+stretchax.Position(3)=stretchax.Position(3)*0.95;
+
+% cc=colormap;
+% cc(1,:) = [0 0 0];
+% colormap(cc)
+
+% Output stretch and curvature data
+outfile = ['temp_MATLAB' filesep char(clip) '_stretchcurve.mat'];
+save(outfile,'stretchax','curvax','cumdist',...
+    'timax','curvdat','ptdistarr','segdistbig');
+
+
+%% Box plot
+segstretchfig = figure(4);
+segdists2 = movmean(segdists,50,1);
+boxplot(100*segdists2./min(segdists2))
+xlabel('Segment number')
+ylabel('Segment stretch statistics (%)')
+% title('Box plot of segment stretch (relative to first frame)')
+xticks(1:numel(ptorder));
+xticklabels(cellstr(num2str(ptorder')));
+segstretchfig.Position = [550 680 640 400];
+ylim([0 600])
+optimizeFig;
+
+
+%% Show arm curves, colored by TIME
+
+% numcurves = 20;     % Number of curves to show
+% locshow = unique(round(linspace(1,curvframeend-curvframestart+1,numcurves)));
+
+if ~exist("locshow","var")
+    locshow = 1:180:curvframeend-curvframestart+1;      % This worked if not binned
+end
+
+% numclrs = numel(locshow);
+numclrs = (max(locshow)-min(locshow))/60+1;
+clrs = turbo(numclrs+2);
+clrs = clrs(2:end-1,:); % First and last color are bad
+
+farmc = figure(10);
+farmc.Position = [600 720 640 400];
+splptstrim = splpts(:,:,curvframestart:curvframeend);
+ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
+ref = permute(splptstrim(1,:,locshow),[3,2,1]);
+% ref = ref*0;  % This line forces "world frame"
+numsplpts = size(splpts,1);
+for i=1:numel(locshow)
+    locshowvis(i) = false;
+    for j=1:numsplpts
+        % Draw point by point
+        if ~isnan(splptstrim(j,1,locshow(i)))
+%             thisclr = clrs(i,:);
+            thisclr = clrs(round((locshow(i)-min(locshow))/60+1),:);
+            plot3(splptstrim(j,1,locshow(i))-ref(i,1),...
+                -(splptstrim(j,3,locshow(i))-ref(i,3)),...
+                splptstrim(j,2,locshow(i))-ref(i,2),...
+                '.','MarkerSize',8,'Color',thisclr)
+
+            hold on
+            locshowvis(i) = true;
+        else
+            
+        end
+    end
+    % % plot3(splpts(:,1,locshow(i))-ref(i,1),splpts(:,3,locshow(i))-ref(i,3),splpts(:,2,locshow(i))-ref(i,2),'-k','linewidth',2,'Color',clrs(i,:))
+    % % hold on
+    plot3(ptdatmmtrim(:,1,locshow(i))-ref(i,1),...
+        -(ptdatmmtrim(:,3,locshow(i))-ref(i,3)),...
+        ptdatmmtrim(:,2,locshow(i))-ref(i,2),'.r','MarkerSize',14)
+%     title(num2str((locshow(i)-armlift)/60))
+%     pause(1)
+end
+hold off
+
+xlabel('x (mm)')
+ylabel('z (mm)')
+zlabel('y (mm)')
+
+axis equal
+% title(['Interval between curves: ' num2str(median(diff(locshow))/60) ' seconds'])
+
+% surf(300+(1:size(segdistbig,1)),300+(1:size(segdistbig,2)),segdistbig);
+colormap(clrs)
+c = colorbar;
+clim([(locshow(1)-armlift)/60-0.5 (locshow(end)-armlift)/60+0.5])
+c.Label.String = 'Time from release (s)';
+c.Ticks = round((locshow(locshowvis>0)-armlift)/60);
+
+% title(['Sample arm poses from clip ' clip],'Interpreter','none');
+ax2 = gca;
+ax2.XGrid = "on";
+ax2.YGrid = "on";
+ax2.ZGrid = "on";
+ax2.FontSize = 20;
+view([-30,10]);
+farmc.Position(3) = 756;
+farmc.Position(4) = 509;
+xl = xlim; yl = ylim; zl = zlim;
+
+% %% Show arm curves, colored by stretch
+% 
+% % numcurves = 20;     % Number of curves to show
+% % locshow = unique(round(linspace(1,curvframeend-curvframestart+1,numcurves)));
+% 
+% if ~exist("locshow","var")
+%     locshow = 1:180:curvframeend-curvframestart+1;      % This worked if not binned
+% end
+% 
+% numclrs = 100;
+% clrs = parula(numclrs);
+% 
+% farmc = figure(10);
+% farmc.Position = [600 720 640 400];
+% splptstrim = splpts(:,:,curvframestart:curvframeend);
+% ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
+% ref = permute(splptstrim(1,:,locshow),[3,2,1]);
+% % ref = ref*0;  % This line forces "world frame"
+% numsplpts = size(splpts,1);
+% for i=1:numel(locshow)
+%     for j=1:numsplpts
+%         % Draw point by point
+%         if ~isnan(splptstrim(j,1,locshow(i)))
+%             strainval = segdistbig_orig(curvframestart+locshow(i)-1,j);
+%             if strainval>strainlimits(2)
+%                 strainval = strainlimits(2);
+%             elseif strainval<strainlimits(1)
+%                 strainval = strainlimits(1);
+%             end
+%             if isnan(strainval)
+%                 thisclr = [0.5 0.5 0.5];
+%             else
+%                 thisclr = interp1(linspace(strainlimits(1),strainlimits(2),numclrs),clrs,strainval);
+%             end
+%             plot3(splptstrim(j,1,locshow(i))-ref(i,1),...
+%                 -(splptstrim(j,3,locshow(i))-ref(i,3)),...
+%                 splptstrim(j,2,locshow(i))-ref(i,2),...
+%                 '.','MarkerSize',5,'Color',thisclr)
+% 
+%             hold on
+%         end
+%     end
+%     % % plot3(splpts(:,1,locshow(i))-ref(i,1),splpts(:,3,locshow(i))-ref(i,3),splpts(:,2,locshow(i))-ref(i,2),'-k','linewidth',2,'Color',clrs(i,:))
+%     % % hold on
+%     plot3(ptdatmmtrim(:,1,locshow(i))-ref(i,1),...
+%         -(ptdatmmtrim(:,3,locshow(i))-ref(i,3)),...
+%         ptdatmmtrim(:,2,locshow(i))-ref(i,2),'.r','MarkerSize',12)
+% %     title(num2str((locshow(i)-armlift)/60))
+% %     pause(1)
+% end
+% hold off
+% 
+% xlabel('x (mm)')
+% ylabel('z (mm)')
+% zlabel('y (mm)')
+% 
+% axis equal
+% % title(['Interval between curves: ' num2str(median(diff(locshow))/60) ' seconds'])
+% 
+% % surf(300+(1:size(segdistbig,1)),300+(1:size(segdistbig,2)),segdistbig);
+% colormap(cc)
+% c = colorbar;
+% clim(strainlimits)
+% c.Label.String = cbarstring;
+% 
+% % title(['Sample arm poses from clip ' clip],'Interpreter','none');
+% ax2 = gca;
+% ax2.XGrid = "on";
+% ax2.YGrid = "on";
+% ax2.ZGrid = "on";
+% ax2.FontSize = 20;
+% view([-30,10]);
+% farmc.Position(3) = 756;
+% farmc.Position(4) = 509;
+% xl = xlim; yl = ylim; zl = zlim;
+
+
+%% Show arm curves, colored by stretch - supp mat video - be sure to run section above first
+
+% minstrain = 0;
+% maxstrain = 120;
+% locshow = 540:(curvframeend-curvframestart+1);
+% 
+% numclrs = 100;
+% clrs = parula(numclrs);
+% 
+% splptstrim = splpts(:,:,curvframestart:curvframeend);
+% ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
+% ref = permute(splptstrim(1,:,locshow),[3,2,1]);
+% 
+% outvid3d = [dropboxpath 'octo_' char(clip) '_suppvid_strain.mp4'];
+% vw = VideoWriter(outvid3d,'MPEG-4');
+% open(vw);
+% 
+% % Initialize view
+% % farmc = figure(10);
+% axis(ax2,'manual')
+% hold(ax2,"off")
+% 
+% for i=1:numel(locshow)
+% 
+%     for j=1:numsplpts
+%         % Draw point by point
+%         if ~isnan(splptstrim(j,1,locshow(i)))
+%             strainval = segdistbig(locshow(i),j);
+%             if strainval>maxstrain
+%                 strainval = maxstrain;
+%             end
+%             if isnan(strainval)
+%                 thisclr = [0.5 0.5 0.5];
+%             else
+%                 thisclr = interp1(linspace(minstrain,maxstrain,numclrs),clrs,strainval);
+%             end
+%             if i==1
+%             p(j)=plot3(ax2,splptstrim(j,1,locshow(i))-ref(i,1),...
+%                 splptstrim(j,3,locshow(i))-ref(i,3),...
+%                 splptstrim(j,2,locshow(i))-ref(i,2),...
+%                 '.','MarkerSize',5,'Color',thisclr);
+%             hold on
+%             else
+%                 p(j).XData = splptstrim(j,1,locshow(i))-ref(i,1);
+%                 p(j).YData = splptstrim(j,3,locshow(i))-ref(i,3);
+%                 p(j).ZData = splptstrim(j,2,locshow(i))-ref(i,2);
+%                 p(j).Color = thisclr;
+%             end
+%         end
+%     end
+%     % plot3(splpts(:,1,locshow(i))-ref(i,1),splpts(:,3,locshow(i))-ref(i,3),splpts(:,2,locshow(i))-ref(i,2),'-k','linewidth',2,'Color',clrs(i,:))
+%     
+%     if i==1
+%     p(j+1) = plot3(ax2,ptdatmmtrim(:,1,locshow(i))-ref(i,1),...
+%         ptdatmmtrim(:,3,locshow(i))-ref(i,3),...
+%         ptdatmmtrim(:,2,locshow(i))-ref(i,2),'.r','MarkerSize',12);
+%     hold off
+%     
+%     else
+%     p(j+1).XData = ptdatmmtrim(:,1,locshow(i))-ref(i,1);
+%     p(j+1).YData = ptdatmmtrim(:,3,locshow(i))-ref(i,3);
+%     p(j+1).ZData = ptdatmmtrim(:,2,locshow(i))-ref(i,2);
+%     end
+%     % pause(1)
+% 
+%     % Update view settings on first round
+%     if i==1
+%         xlabel('x (mm)')
+%         ylabel('z (mm)')
+%         zlabel('y (mm)')
+% 
+%         axis equal
+%         % title(['Interval between curves: ' num2str(median(diff(locshow))/60) ' seconds'])
+% 
+%         % surf(300+(1:size(segdistbig,1)),300+(1:size(segdistbig,2)),segdistbig);
+%         colormap parula
+%         c = colorbar;
+%         clim([minstrain maxstrain])
+%         c.Label.String = 'Strain (% from minimum)';
+% 
+%         % title(['Sample arm poses from clip ' clip],'Interpreter','none');
+%         ax2 = gca;
+%         ax2.XGrid = "on";
+%         ax2.YGrid = "on";
+%         ax2.ZGrid = "on";
+%         ax2.FontSize = 20;
+%         view([-30,10]);
+%         axis manual
+%         xlim(ax2,xl);
+%     ylim(ax2,yl);
+%     zlim(ax2,zl);
+%     end
+% 
+%     drawnow;
+% %     pause(1);
+%     % Grab overlaid frame
+%     frame = getframe(ax2);
+%     % frame = imresize(frame.cdata,[2000 2000]);
+%     frame=frame.cdata;
+%     i
+%     size(frame)
+% %     writeVideo(vw,frame);
+% end
+% close(vw)
+
+
+%% Functions
