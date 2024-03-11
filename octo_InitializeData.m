@@ -692,7 +692,7 @@ switch clipchar(1:3)
 end
 
 %% Save to mat file
-matpath = [dropboxpath 'temp_MATLAB' filesep 'process_settings_' char(clip) '.mat'];
+matpath = [dropboxpath 'octopus-3d-tracking' filesep 'temp_MATLAB' filesep 'process_settings_' char(clip) '.mat'];
 
 save(matpath);
 

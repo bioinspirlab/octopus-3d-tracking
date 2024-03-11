@@ -4,7 +4,7 @@
 % and plots them all together
 
 clear all
-% close all
+close all
 %% Inputs
 
 % clips = {"O10_6946_L1",...
@@ -70,6 +70,7 @@ switch x_mode
     case "scaled"
         bininterval = 0.05;        % Size of bininterval. Set 0 for OFF
         timarr = -0.7:bininterval:0.1;
+        timarr = -0.5:bininterval:0.4;  % Used for arms 1 and 2!
 end
 
 
@@ -171,13 +172,13 @@ ax = gca;
 ax.YDir='normal';
 switch x_mode
     case "scaled"
-        xlabel('Time from substrate release')
+        xlabel('Time from substrate release (normalized)')
     case "absolute"
         xlabel('Time from substrate release (s)')
 end
 switch mode
     case "scaled"
-        ylabel('Distance from attachment point')
+        ylabel('Distance from attachment point (normalized)')
     case "absolute"
         ylabel('Average position along arm (mm)')
 end
@@ -216,23 +217,24 @@ ax = gca;
 ax.YDir='normal';
 switch x_mode
     case "scaled"
-        xlabel('Time from substrate release')
+        xlabel('Time from substrate release (normalized)')
     case "absolute"
         xlabel('Time from substrate release (s)')
 end
 switch mode
     case "scaled"
-        ylabel('Distance from attachment point')
+        ylabel('Distance from attachment point (normalized)')
     case "absolute"
         ylabel('Average position along arm (mm)')
 end
 % title('Number of sequences with data','Interpreter','none')
-% legend(clips,'Interpreter','none')
-% optimizeFig;
+imm.CData(imm.CData==max(numreplicates(:))) = max(numreplicates(:))+0.5;
+imm.CData(imm.CData==0) = -0.5;
+ax.FontSize = 15;
 c = colorbar;
 c.Label.String = 'Number of sequences';
-c.Limits(2) = max(numreplicates(:));
-ax.FontSize = 15;
+c.Ticks = 0:1:max(numreplicates(:));
+% c.Limits = [-0.5 max(numreplicates(:))+0.5];
 
 % cmap = ax.Colormap;
 cmap = parula(max(numreplicates(:))+1);

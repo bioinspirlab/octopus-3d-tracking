@@ -13,7 +13,7 @@ load(preprocessdata,'ptorder','guidepts','numframes','ptdatmm',...
     'guideptind','arr','numpsplineseg','opt')
 
 % Load process data from file if possible
-analysisdatapath = [dropboxpath 'temp_MATLAB' filesep 'segment_analysis_data_' char(clip) '_' opt.method '.mat'];
+analysisdatapath = [dropboxpath 'octopus-3d-tracking' filesep 'temp_MATLAB' filesep 'segment_analysis_data_' char(clip) '_' opt.method '.mat'];
 
 if exist(analysisdatapath,"file")==0
 

@@ -17,7 +17,7 @@ opt.method = 'spline';
 %% Load existing file if available
 
 % Load process data from file if possible
-processdatapath = [dropboxpath 'temp_MATLAB' filesep 'preprocessed_data_' char(clip) '_' opt.method '.mat'];
+processdatapath = [dropboxpath 'octopus-3d-tracking' filesep 'temp_MATLAB' filesep 'preprocessed_data_' char(clip) '_' opt.method '.mat'];
 if exist(processdatapath,"file")==0
 
     %% Load point data

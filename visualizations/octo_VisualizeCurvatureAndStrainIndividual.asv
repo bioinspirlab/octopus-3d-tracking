@@ -50,20 +50,17 @@ close all
 % xlimits = [-16 35];
 % strainlimits = [-30 110];
 
-% clip = "O15_1611_19083_L3";     % Verified
-% strainlimits = [-20 110];
-% xlimits = [-25 5];
-% % locshow = 2935-4+(-23:3:5)*60;
-% % locshow = 1279:1:3239;
+clip = "O15_1611_19083_L3";     % Verified
+strainlimits = [-20 110];
+% locshow = 2935-4+(-23:3:5)*60;
 
 % clip = "O15_1611_22417_L2";     % Verified
 % xlimits = [-15 15];
 % strainlimits = [-30 80];
 
-clip = "O15_1611_22417_L3";     % Verified
-xlimits = [-30 4];
-strainlimits = [-30 110];
-% locshow = 390:3076;
+% clip = "O15_1611_22417_L3";     % Verified
+% xlimits = [-30 4];
+% strainlimits = [-30 110];
 
 % clip = "O15_1611_22417_L4";     % Verified. Note: need strain reference
 %     at 9 seconds
@@ -378,13 +375,12 @@ clrs = turbo(numclrs+2);
 clrs = clrs(2:end-1,:); % First and last color are bad
 
 farmc = figure(10);
-farmc.Position = [600 720 640 500];
+farmc.Position = [600 720 640 400];
 splptstrim = splpts(:,:,curvframestart:curvframeend);
 ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
 ref = permute(splptstrim(1,:,locshow),[3,2,1]);
 % ref = ref*0;  % This line forces "world frame"
 numsplpts = size(splpts,1);
-locshowvis = [];
 for i=1:numel(locshow)
     locshowvis(i) = false;
     for j=1:numsplpts
@@ -443,24 +439,16 @@ xl = xlim; yl = ylim; zl = zlim;
 % numcurves = 20;     % Number of curves to show
 % locshow = unique(round(linspace(1,curvframeend-curvframestart+1,numcurves)));
 
-if ~exist("locshow","var")
+% if ~exist("locshow","var")
     locshow = 1:180:curvframeend-curvframestart+1;      % This worked if not binned
-    locshow = 1:30:curvframeend-curvframestart+1;      % This worked if not binned
-    locshowold = locshow;
-else
-    locshowold = locshow;
-    locshow = curvframestart:30:curvframeend-curvframestart+1;
-end
-% locshow = 920:10:1150;
-% locshow = 2600:10:2800;
-locshow = 390:180:3076;
+% end
+locshow = 1:60:curvframeend;
 
 numclrs = 100;
 clrs = parula(numclrs);
 
 farmc = figure(10);
-pos11 = [600 720 640 600];
-farmc.Position = pos11;
+farmc.Position = [600 720 640 400];
 splptstrim = splpts(:,:,curvframestart:curvframeend);
 ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
 ref = permute(splptstrim(1,:,locshow),[3,2,1]);
@@ -518,40 +506,25 @@ ax2.XGrid = "on";
 ax2.YGrid = "on";
 ax2.ZGrid = "on";
 ax2.FontSize = 20;
-if clip == "O15_1611_22417_L3"
-    view([-35,8]);   % Use for 22417_L3
-    ax2.YLabel.Position(1) = -40;
-    ax2.YLabel.Position(2) = -60;
-    xlim([-5 105])
-%     ylim([-36,24]);
-    ylim([-45 26]);
-    zlim([-61 5]);
-else
-    view([35,8]);   % Use for 19083_L3
-    zl = zlim+[-10 10]; zlim(zl);
-end
-% farmc.Position(3) = pos11(3);
-% farmc.Position(4) = pos11(4);
+view([35,8]);
+farmc.Position(3) = 756;
+farmc.Position(4) = 509;
 xl = xlim; yl = ylim; zl = zlim;
 
-% locshow = locshowold;
 
-ddssdfds
 %% Show arm curves, colored by stretch - supp mat video - be sure to run section above first
 
 if ~exist("locshow","var")
     locshow = 1:180:curvframeend-curvframestart+1;      % This worked if not binned
 end
 
-% locshow = 1279:1:3239;    % 19083
-locshow = 390:3076;     % 22417_L3
-% locshow = curvframestart:180:curvframeend-curvframestart+1;
+locshow = 1279:3239;
 
 numclrs = 100;
 clrs = parula(numclrs);
 
 farmc = figure(10);
-farmc.Position = pos11;
+farmc.Position = [600 720 640 400];
 splptstrim = splpts(:,:,curvframestart:curvframeend);
 ptdatmmtrim = ptdatmm(:,:,curvframestart:curvframeend);
 ref = permute(splptstrim(1,:,locshow),[3,2,1]);
@@ -560,17 +533,16 @@ ref = fixref(ref);
 % ref = ref*0;  % This line forces "world frame"
 numsplpts = size(splpts,1);
 
-outvid3d = [dropboxpath 'visualizations' filesep char(clip) '_suppvid_strain.mp4'];
+outvid3d = [dropboxpath char(clip) '_suppvid_strain.mp4'];
 vw = VideoWriter(outvid3d,'MPEG-4');
 open(vw);
 
 % Initialize view
 % farmc = figure(10);
 axis(ax2,'manual')
-thisfig=gcf;
 hold(ax2,"off")
 k=1;
-for i=1:numel(locshow)
+for i=1:10:numel(locshow)
     if i==1
         for j=1:numsplpts
             p(j)=plot3(ax2,nan,nan,nan,'.','MarkerSize',5,'Color',[0,0,0]);
@@ -652,35 +624,19 @@ for i=1:numel(locshow)
         ax2.YGrid = "on";
         ax2.ZGrid = "on";
         ax2.FontSize = 20;
-        temp = xlim;
-        xl(1) = min(xl(1),temp(1));
-        xl(2) = max(xl(2),temp(2));
-        xl
-        temp = ylim;
-        yl(1) = min(yl(1),temp(1));
-        yl(2) = max(yl(2),temp(2));
-        temp = zlim;
-        zl(1) = min(zl(1),temp(1));
-        zl(2) = max(zl(2),temp(2));
+        view([35,8]);
         axis manual
-        xlim(ax2,xl+[-5,5]);
-        ylim(ax2,yl+[-5,5]);
-        zlim(ax2,zl+[-10,5]);
-        if clip == "O15_1611_22417_L3"
-            view([-35,8]);   % Use for 22417_L3
-            ax2.YLabel.Position(1) = -20;
-            ax2.YLabel.Position(2) = -40;
-        else
-            view([35,8]);   % Use for 19083_L3
-        end
+        xlim(ax2,xl);
+    ylim(ax2,yl);
+    zlim(ax2,zl);
     end
 
     drawnow;
 %     pause(1);
     % Grab overlaid frame
-    frame = getframe(thisfig);
-    frame = imresize(frame.cdata,2);
-%     frame=frame.cdata;
+    frame = getframe(ax2);
+    % frame = imresize(frame.cdata,[2000 2000]);
+    frame=frame.cdata;
     i
 %     size(frame)
     writeVideo(vw,frame);
@@ -690,14 +646,14 @@ close(vw)
 
 %% Functions
 function outref = fixref(ref)
-% Interpolate values in reference point as needed
+% Interpolate as needed
 if isnan(ref(1,1))
     ind = find(~isnan(ref(:,1)),1,'first');
     ref(1:ind,:) = repmat(ref(ind,:),ind,1);
 end
 if isnan(ref(end,1))
     ind = find(~isnan(ref(:,1)),1,'last');
-    ref(ind:end,:) = repmat(ref(ind,:),size(ref,1)-ind+1,1);
+    ref(ind:end,:) = repmat(ref(ind,:),size(ref,1)-ind,1);
 end
 ind = isnan(ref(:,1));
 indx = 1:size(ref,1);
