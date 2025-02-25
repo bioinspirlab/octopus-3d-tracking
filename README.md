@@ -17,6 +17,9 @@ Important definitions related to the datasets (referred to as 'clips') are inclu
 
 ## Additional details
 
+### System requirements
+This code requires MATLAB ([The Mathworks, Inc](https://www.mathworks.com/products/matlab.html)) with the Image Processing Toolbox to run. It was developed in MATLAB R2021b on MacOS, but tested to work on Windows machine with MATLAB R2022b, and MacOS with MATLAB 2023b. 
+
 ### Analysis programs
 
 * octo_PreProcess.m: Used to calculate 3D point data from depth maps and 2D point tracking. Results are cached in the cache folder.
