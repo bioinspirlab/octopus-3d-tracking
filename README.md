@@ -51,3 +51,10 @@ This code requires MATLAB ([The Mathworks, Inc](https://www.mathworks.com/produc
 ### Misc programs
 
 * convert4DtiffsTo1D.m: Default export processes of the rays files generate 4D tiffs. However, x/Y values can be inferred from just a single reference tiff. This script copies z (depth) coordinate of the TIFFs over to a new folder for reduced size and no effective loss of information.
+
+## Related repositories
+
+As part of this project, additional software, data, and designs are published in other repositories.
+* Data: https://doi.org/10.5281/zenodo.10795493
+* Instrument design: https://github.com/bioinspirlab/eyeris-zoom-drive
+* Instrument control: https://github.com/bioinspirlab/eyeris-camera-control
