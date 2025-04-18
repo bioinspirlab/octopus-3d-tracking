@@ -56,7 +56,11 @@ depthmap = median(depthmap,3,'omitnan');
 % valid data
 % depthmap = nanmedfilt2(depthmap,[med2 med2]).*~isnan(depthmap);
 temp = isnan(depthmap);
-hasgpu = ~isempty(gpuDeviceTable);
+try
+    hasgpu = ~isempty(gpuDeviceTable);
+catch
+    hasgpu = false;
+end
 if opt.fillmode=="fillmore"
     % Fill more, by setting larger median filter
     if hasgpu

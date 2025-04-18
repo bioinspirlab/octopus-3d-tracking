@@ -4,10 +4,10 @@
 % Converts points to XYZ points in mm using the depthmap data, performs
 % spline interpolation between 3D points, and exports a preview clip
 
-function processdatapath = octo_PreProcess(clip)
+function processdatapath = octo_PreProcess(clip, dropboxpath, basepath)
 
 %% Configure
-matpath = octo_InitializeData(clip);
+matpath = octo_InitializeData(clip, dropboxpath, basepath);
 load(matpath);
 
 maxgapfill = 100;
@@ -17,7 +17,7 @@ opt.method = 'spline';
 %% Load existing file if available
 
 % Load process data from file if possible
-processdatapath = [dropboxpath 'octopus-3d-tracking' filesep 'temp_MATLAB' filesep 'preprocessed_data_' char(clip) '_' opt.method '.mat'];
+processdatapath = [dropboxpath filesep 'temp_MATLAB' filesep 'preprocessed_data_' char(clip) '_' opt.method '.mat'];
 if exist(processdatapath,"file")==0
 
     %% Load point data
@@ -71,16 +71,18 @@ if exist(processdatapath,"file")==0
                 % Initialize arrays on first loop
                 if firstloop
                     % Horizontal axis
-                    temp = double(median(temp_depth(:,:,3),1,'omitnan'));
+                    % temp = double(median(temp_depth(:,:,3),1,'omitnan'));
                     xpix = 1:size(temp_depth,2);
-                    ind = ~isnan(temp);
-                    xarr = interp1(xpix(ind),temp(ind),xpix,'linear','extrap');
+                    % ind = ~isnan(temp);
+                    % xarr = interp1(xpix(ind),temp(ind),xpix,'linear','extrap');
+                    xarr = (xpix-size(temp_depth,2)/2)*xcal;
 
                     % Vertical axis
-                    temp = double(median(temp_depth(:,:,2),2,'omitnan'));
+                    % temp = double(median(temp_depth(:,:,2),2,'omitnan'));
                     ypix = 1:size(temp_depth,1);
-                    ind = ~isnan(temp);
-                    yarr = interp1(ypix(ind),temp(ind),ypix,'linear','extrap');
+                    % ind = ~isnan(temp);
+                    % yarr = interp1(ypix(ind),temp(ind),ypix,'linear','extrap');
+                    yarr = (ypix-size(temp_depth,1)/2)*ycal;
 
                     % Meshgrid for interpolation on depthmap
                     [X,Y] = meshgrid(xpix,ypix);

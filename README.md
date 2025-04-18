@@ -9,48 +9,53 @@ Important definitions related to the datasets (referred to as 'clips') are inclu
 
 ## Instructions for use
 
-* Download the data you'd like to use.
-* Run "octo_InitializeData.m"; it will create a definitions file "octo_DataLocations.m".
-* Enter the appropriate paths in "octo_DataLocations.m".
-* Optional: preprocess the clips of interest at a convenient time. This can take a while. "octo_batch.m" is a convenient way to batch process multiple clips.
-* Run a visualization, analysis or export script of your choosing. Most are implemented as functions, and require the clip name as defined in "octo_InitializeData.m" (e.g., "O15_1611_19083_L3").
+* Make sure you have MATLAB installed according to the System requirements below.
+* Download the data you would like to use - video data is only required for certain visualizations.
+* Run `octo_InitializeData.m`; it will create a definitions file "octo_DataLocations.m".
+* Enter the appropriate paths in `octo_DataLocations.m`.
+* Optional: preprocess the clips of interest at a convenient time. This can take a while. `octo_batch.m` is a convenient way to batch process multiple clips.
+* Run a visualization, analysis or export script of your choosing. Most are implemented as functions, and require the clip name as defined in `octo_InitializeData.m` (e.g., "O15_1611_19083_L3").
+
+### Minimal working example
+
+A minimal working example is provided in `analysis_example.m`. You will need to download and unzip the data for octopus O15 and the tracking_data from the [Zenodo repository](https://zenodo.org/records/10795493) first. Depending on platform, you may need a tool such as 7zip, WinRAR or The Unarchiver to extract the multipart file. Provide the location of the extracted files as `input_data_path` in the script. Unzip the `tracking_data.zip` file inside the same folder. Successful exection of `analysis_example.m` will take some time initially as the preprocessing steps are completed. Once done, exceute the desired section in `octo_VisualizeCurvatureAndStrainIndividual.m`, for example the section titled *Plot curvature surface*, at line 136+, which will reproduce plot ED2c in our manuscript.
 
 ## Additional details
 
 ### System requirements
-This code requires MATLAB ([The Mathworks, Inc](https://www.mathworks.com/products/matlab.html)) with the Image Processing Toolbox to run. It was developed in MATLAB R2021b on MacOS, but tested to work on Windows machine with MATLAB R2022b, and MacOS with MATLAB 2023b. 
+This code requires MATLAB ([The Mathworks, Inc](https://www.mathworks.com/products/matlab.html)) with the Image Processing Toolbox and Curve Fitting Toolbox to run. Instructions for installing additional toolboxes can be found on [the Mathworks website](https://www.mathworks.com). You will also need [nanmedfilt2](https://www.mathworks.com/matlabcentral/fileexchange/41457-nanmedfilt2). The parallel computing toolbox is optional, and may provide computation speed improvements. This code was developed in MATLAB R2021b on MacOS, but tested to work on a Windows machine with MATLAB R2022b, and MacOS with MATLAB 2023b. 
 
 ### Analysis programs
 
-* octo_PreProcess.m: Used to calculate 3D point data from depth maps and 2D point tracking. Results are cached in the cache folder.
-* octo_AnalyzeSegments.m: Calculates segment properties. The "curvPeaks" function inside this file optionally calculates the location of maximum curvature - this requires certaina dditional settings in "octo_InitializeData.m"
-* calcGeodesic.m: An attempt at tracking the arms across the depth map surface, rather than interpolation depth between points with a spline. Not currently used.
-* calcPath.m: Similar to calcGeodesic.m
-* getSphereFrom3Points.m: Used to calculate bend radius.
-* octo_ProcessDepthMap.m: Used to process depth maps prior to determining associated z coordinates from 2D data.
-* surfaceSpline.m: Determines spline interpolation between tracked points.
+* `octo_PreProcess.m`: Used to calculate 3D point data from depth maps and 2D point tracking. Results are cached in the cache folder.
+* `octo_AnalyzeSegments.m`: Calculates segment properties. The `curvPeaks` function inside this file optionally calculates the location of maximum curvature - this requires certain additional settings in `octo_InitializeData.m`
+* `calcGeodesic.m`: An attempt at tracking the arms across the depth map surface, rather than interpolation depth between points with a spline. Not currently used.
+* `calcPath.m`: Similar to `calcGeodesic.m`
+* `getSphereFrom3Points.m`: Used to calculate bend radius.
+* `octo_ProcessDepthMap.m`: Used to process depth maps prior to determining associated z coordinates from 2D data.
+* `surfaceSpline.m`: Determines spline interpolation between tracked points.
 
 ### Visualizations
 
-* octo_VisualizeCurvatureAndStrainIndividual.m: The go-to program to generate strain and curvature plots for a single clip.
-* octo_VisualizeCurvatureAggregate.m: Aggregate statistics for curvature across selected clips. 
-* octo_VisualizeGlobalMovement.m: Read stride observations from a Google sheet and generates a visualization.
-* octo_VisualizePeakCurvatureAggregate.m: Peak curvature across selected clips. 
-* octo_VisualizeStrainAggregate.m: Aggregate statistics for strain across selected clips. 
-* octo_DataVisualization_Other.m: Various little visualization experiments in one program.
+* `octo_VisualizeCurvatureAndStrainIndividual.m`: The go-to program to generate strain and curvature plots for a single clip.
+* `octo_VisualizeCurvatureAggregate.m`: Aggregate statistics for curvature across selected clips. 
+* `octo_VisualizeGlobalMovement.m`: Read stride observations from a Google sheet and generates a visualization.
+* `octo_VisualizePeakCurvatureAggregate.m`: Peak curvature across selected clips. 
+* `octo_VisualizeStrainAggregate.m`: Aggregate statistics for strain across selected clips. 
+* `octo_DataVisualization_Other.m`: Various little visualization experiments in one program.
 
 ### Video export programs
 
-* octo_ExportVideo_3Dviews.m: Generate a video with two different angles of the spline-interpolated arm, with total focus imagery on the background.
-* octo_ExportVideo_OverlayPoints.m: Overlay points on videos.
-* octo_ExportVideo_OverlayPointsAndSpline.m: Generate a video of total focus and depth map, with points and spline overlaid.
-* octo_ExportVideo_Quad3D.m: Generate a multi-panel video with two ROV views of the animal, a depth map from EyeRIS data, total focus image with points and spline overlaid, and a 3D plot of the interpolated arm attitude.
-* octo_ExportVideoPNG_DepthMap.m: Export depth map images as PNGs.
-* octo_ExportVideoPNG_TotalFocus_OverlayPoints.m: Export total focus images with point overlaid (PNG and/or MP4). Can include multiple arms for the same sequence.
+* `octo_ExportVideo_3Dviews.m`: Generate a video with two different angles of the spline-interpolated arm, with total focus imagery on the background.
+* `octo_ExportVideo_OverlayPoints.m`: Overlay points on videos.
+* `octo_ExportVideo_OverlayPointsAndSpline.m`: Generate a video of total focus and depth map, with points and spline overlaid.
+* `octo_ExportVideo_Quad3D.m`: Generate a multi-panel video with two ROV views of the animal, a depth map from EyeRIS data, total focus image with points and spline overlaid, and a 3D plot of the interpolated arm attitude.
+* `octo_ExportVideoPNG_DepthMap.m`: Export depth map images as PNGs.
+* `octo_ExportVideoPNG_TotalFocus_OverlayPoints.m`: Export total focus images with point overlaid (PNG and/or MP4). Can include multiple arms for the same sequence.
 
 ### Misc programs
 
-* convert4DtiffsTo1D.m: Default export processes of the rays files generate 4D tiffs. However, x/Y values can be inferred from just a single reference tiff. This script copies z (depth) coordinate of the TIFFs over to a new folder for reduced size and no effective loss of information.
+* `convert4DtiffsTo1D.m`: Default export processes of the rays files generate 4D tiffs. However, X/Y values can be inferred from just a single reference tiff. This script copies z (depth) coordinate of the TIFFs over to a new folder for reduced size and no effective loss of information.
 
 ## Related repositories
 

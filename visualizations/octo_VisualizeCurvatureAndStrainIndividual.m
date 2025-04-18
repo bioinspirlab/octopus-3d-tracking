@@ -1,93 +1,87 @@
 %% Various analysis and plots for octopus data
 
-clear all
-close all
+if exist("clip")~=1
+    error("Define a clip to visualize.")
+end
+if exist("input_data_path")~=1
+    error("Define a data location path.")
+end
+if exist("output_data_path")~=1
+    error("Define an output path.")
+end
 
-%% Inputs
+%% Settings
 
-% clip = "O10_6946_L1";   % Verified. Note: use adjusted reference, option (4) below
-
-% clip = "O10_7875_R1";  % Verified. Clip too short for stretch reference
-
-% clip = "O14_24216_L1";  % Verified
-% xlimits = [-30 50];
-% strainlimits = [-20 70];
-
-% clip = "O14_24216_L2";  % Verified
-% xlimits = [-30 10];
-% strainlimits = [-20 80];
-% locshow = 6491+([-6,-3,0,1,2,3,4,5,6])*60;
-
-% clip = "O14_24216_L3";  % Verified
-% xlimits = [-20 3];
-% strainlimits = [-30 100];
-
-% clip = "O15_1611_7882_R3";  % Verified
-% xlimits = [-26 5];
-% strainlimits = [-30 100];
-
-% clip = "O15_1611_11589_R3";     % Verified
-% strainlimits = [-30 100];
-
-% clip = "O15_1611_13209_L3_1";   % Verified. Note no good strain reference is present
-% xlimits = [-2 5];
-
-% clip = "O15_1611_13209_L3_2";   % Verified
-% xlimits = [-18 -5];
-% strainlimits = [-30 80];
-
-% clip = "O15_1611_13209_L4";     % Verified. Needs different strain reference
-% xlimits = [-6.2 5.2];
-% strainlimits = [-20 80];
-% locshow = 997+([-5,-2,-1,0,1,2,3,4])*60;
-
-% clip = "O15_1611_15512_L1";     % Verified
-% xlimits = [-11 5];
-% strainlimits = [-30 80];
-% locshow = 680+(-4:1:4)*60;
-
-% clip = "O15_1611_19083_L2";     % Verified
-% xlimits = [-16 35];
-% strainlimits = [-30 110];
-
-% clip = "O15_1611_19083_L3";     % Verified
-% strainlimits = [-20 110];
-% xlimits = [-25 5];
-% % locshow = 2935-4+(-23:3:5)*60;
-% % locshow = 1279:1:3239;
-
-% clip = "O15_1611_22417_L2";     % Verified
-% xlimits = [-15 15];
-% strainlimits = [-30 80];
-
-clip = "O15_1611_22417_L3";     % Verified
-xlimits = [-30 4];
-strainlimits = [-30 110];
-% locshow = 390:3076;
-
-% clip = "O15_1611_22417_L4";     % Verified. Note: need strain reference
-%     at 9 seconds
-% xlimits = [-10 5];
-% strainlimits = [-30 80];
+switch clip
+    case "O10_6946_L1"   % Verified. Note: use adjusted reference, option (4) below
+    case "O10_7875_R1"  % Verified. Clip too short for stretch reference
+    case "O14_24216_L1"  % Verified
+        xlimits = [-30 50];
+        strainlimits = [-20 70];
+    case "O14_24216_L2"  % Verified
+        xlimits = [-30 10];
+        strainlimits = [-20 80];
+        locshow = 6491+([-6,-3,0,1,2,3,4,5,6])*60;
+    case "O14_24216_L3"  % Verified
+        xlimits = [-20 3];
+        strainlimits = [-30 100];
+    case "O15_1611_7882_R3"  % Verified
+        xlimits = [-26 5];
+        strainlimits = [-30 100];
+    case "O15_1611_11589_R3"     % Verified
+        strainlimits = [-30 100];
+    case "O15_1611_13209_L3_1"   % Verified. Note no good strain reference is present
+        xlimits = [-2 5];
+    case "O15_1611_13209_L3_2"   % Verified
+        xlimits = [-18 -5];
+        strainlimits = [-30 80];
+    case "O15_1611_13209_L4"     % Verified.
+        xlimits = [-6.2 5.2];
+        strainlimits = [-20 80];
+        locshow = 997+([-5,-2,-1,0,1,2,3,4])*60;
+    case "O15_1611_15512_L1"     % Verified
+        xlimits = [-11 5];
+        strainlimits = [-30 80];
+        locshow = 680+(-4:1:4)*60;
+    case "O15_1611_19083_L2"     % Verified
+        xlimits = [-16 35];
+        strainlimits = [-30 110];
+    case "O15_1611_19083_L3"     % Verified
+        strainlimits = [-20 110];
+        xlimits = [-25 5];
+        % locshow = 2935-4+(-23:3:5)*60;
+        % locshow = 1279:1:3239;
+    case "O15_1611_22417_L2"     % Verified
+        xlimits = [-15 15];
+        strainlimits = [-30 80];
+    case "O15_1611_22417_L3"     % Verified
+        xlimits = [-30 4];
+        strainlimits = [-30 110];
+        % locshow = 390:3076;
+    case "O15_1611_22417_L4"
+        %     at 9 seconds
+        xlimits = [-10 5];
+        strainlimits = [-30 80];
+end
 
 mode = "absolute";    % Options: "absolute" or "normalized"
 bininterval = 0;      % Number of seconds for bininterval. Set 0 for OFF
 plotpeak = false;        % Whether to plot peak on curvature plot
 showpoints = false;      % Whether to show red lines for where the points are, and their labels
 timeaxis = "s";     % How to set the time axis: "frame" or "s" or ???
-armtouchpoint_mm = 0;   % This should be replaced if available
+armtouchpoint_mm = 0;   % This will be replaced if available
 
 %% Data load
 
-matpath = octo_InitializeData(clip);
+matpath = octo_InitializeData(clip, output_data_path, input_data_path);
 load(matpath,'armlift','framerate','armtrimloc','curvframestart',...
     'curvframeend','armtouchpoint_mm','dropboxpath');
-preprocessdata = octo_PreProcess(clip);
+preprocessdata = octo_PreProcess(clip, dropboxpath, input_data_path);
 load(preprocessdata,'ptorder','guidepts','numframes','ptdatmm',...
     'guideptind','arr','numpsplineseg','ptorderNG','ptnames')
 
 % This is where the actual analysis is performed
-analysisdatapath = octo_AnalyzeSegments(clip);
+analysisdatapath = octo_AnalyzeSegments(clip, dropboxpath, input_data_path);
 load(analysisdatapath,'cumdist','curvdat','curvdatbinned','timax',...
     'segdists','segdistbig','curvPeakInd','ptdistarr','splpts');
 % segdistbig = 100*segdistbig./min(segdistbig,[],1,'omitnan')-100;
@@ -136,6 +130,8 @@ end
 
 % Array for drawing point locations if desired
 [yyy,~] = meshgrid(timax,1:numel(ptorderNG));
+disp('Processing complete. Now execute the desired section in octo_VisualizeCurvatureAndStrainIndividual.m')
+return
 
 %% Plot curvature surface
 
@@ -536,7 +532,6 @@ xl = xlim; yl = ylim; zl = zlim;
 
 % locshow = locshowold;
 
-ddssdfds
 %% Show arm curves, colored by stretch - supp mat video - be sure to run section above first
 
 if ~exist("locshow","var")
@@ -686,7 +681,6 @@ for i=1:numel(locshow)
     writeVideo(vw,frame);
 end
 close(vw)
-
 
 %% Functions
 function outref = fixref(ref)

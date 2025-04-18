@@ -3,17 +3,17 @@
 % Analysis per segment (after running preprocessing steps)
 % MORE DETAILS
 
-function analysisdatapath = octo_AnalyzeSegments(clip)
+function analysisdatapath = octo_AnalyzeSegments(clip, dropboxpath, basepath)
 
 % Load initialization & preprocess data
-matpath = octo_InitializeData(clip);
+matpath = octo_InitializeData(clip, dropboxpath, basepath);
 load(matpath,'dropboxpath','armlift','framerate','armtrimloc');
-preprocessdata = octo_PreProcess(clip);
+preprocessdata = octo_PreProcess(clip, dropboxpath, basepath);
 load(preprocessdata,'ptorder','guidepts','numframes','ptdatmm',...
     'guideptind','arr','numpsplineseg','opt')
 
 % Load process data from file if possible
-analysisdatapath = [dropboxpath 'octopus-3d-tracking' filesep 'temp_MATLAB' filesep 'segment_analysis_data_' char(clip) '_' opt.method '.mat'];
+analysisdatapath = [dropboxpath filesep 'temp_MATLAB' filesep 'segment_analysis_data_' char(clip) '_' opt.method '.mat'];
 
 if exist(analysisdatapath,"file")==0
 
@@ -248,22 +248,22 @@ for rrr = 1:size(curvdat,1)
         gaussfit = f1.a*exp(-2*(indsb-f1.b).^2/f1.c^2)+f1.d;
         peakInd(rrr) = f1.b;
         peakHeight(rrr) = f1.a;
-        figure(16)
-        xax = (1:numel(thiscurve));
-        if firstloop
-            plcurve = plot(xax,thiscurve);
-            hold on
-            plfit = plot(xax(indsb),gaussfit,'-r');
-            hold off
-            pltitle = title(num2str(rrr));
-            firstloop = false;
-        else
-            plcurve.XData = xax;
-            plcurve.YData = thiscurve;
-            plfit.XData = xax(indsb);
-            plfit.YData = gaussfit;
-            pltitle.String = num2str(rrr);
-        end
+        % figure(16)
+        % xax = (1:numel(thiscurve));
+        % if firstloop
+        %     plcurve = plot(xax,thiscurve);
+        %     hold on
+        %     plfit = plot(xax(indsb),gaussfit,'-r');
+        %     hold off
+        %     pltitle = title(num2str(rrr));
+        %     firstloop = false;
+        % else
+        %     plcurve.XData = xax;
+        %     plcurve.YData = thiscurve;
+        %     plfit.XData = xax(indsb);
+        %     plfit.YData = gaussfit;
+        %     pltitle.String = num2str(rrr);
+        % end
         pause(0.05);
     end
 
